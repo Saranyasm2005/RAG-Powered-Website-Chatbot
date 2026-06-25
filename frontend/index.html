@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scribbler RAG | AI Knowledge Base Assistant</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Style Sheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Dashboard -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="brand-logo">
+                    <i class="fa-solid fa-spider-web fa-spin-slow"></i>
+                    <i class="fa-solid fa-cube"></i>
+                </div>
+                <div class="brand-name">
+                    <h1>Scribbler <span>RAG</span></h1>
+                    <p>AI Knowledge Base Assistant</p>
+                </div>
+            </div>
+
+            <!-- Settings Trigger -->
+            <div class="sidebar-section">
+                <button id="open-settings-btn" class="btn btn-secondary btn-full">
+                    <i class="fa-solid fa-key"></i> Groq API Key Settings
+                </button>
+            </div>
+
+            <!-- Scraper Control Center -->
+            <div class="sidebar-section panel">
+                <h3><i class="fa-solid fa-globe"></i> Website Knowledge Base</h3>
+                
+                <div class="input-group">
+                    <label for="crawl-url">Start URL</label>
+
+                    <input
+                        type="url"
+                        id="crawl-url"
+                        placeholder="Enter any website URL"
+                    >
+
+                    <span class="input-help">
+                       Build an AI-powered searchable knowledge base from any website.
+                    </span>
+
+                </div>
+
+                <div class="row">
+                    <div class="input-group half">
+                        <label for="max-pages">Max Pages</label>
+                        <input type="number" id="max-pages" min="1" max="150" value="30">
+                    </div>
+                    <div class="input-group half">
+                        <label for="crawl-depth">Crawl Depth</label>
+                        <select id="crawl-depth">
+                            <option value="1">1 (Direct page)</option>
+                            <option value="2" selected>2 (Depth 2)</option>
+                            <option value="3">3 (Depth 3)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <button id="start-crawl-btn" class="btn btn-primary btn-full">
+                    <i class="fa-solid fa-play"></i> Start Ingestion
+                </button>
+            </div>
+
+            <!-- Crawling Status & Progress -->
+            <div id="crawling-progress-card" class="sidebar-section panel hidden">
+                <div class="panel-header">
+                    <h3><i class="fa-solid fa-circle-notch fa-spin"></i> Indexing Status</h3>
+                    <span id="crawl-status-badge" class="badge">crawling</span>
+                </div>
+                <p id="crawl-message">Initializing crawler...</p>
+                
+                <div class="progress-bar-container">
+                    <div id="crawl-progress-bar" class="progress-bar" style="width: 0%;"></div>
+                </div>
+                
+                <div class="progress-stats">
+                    <span>Pages: <strong id="pages-count">0</strong></span>
+                    <span>In Queue: <strong id="queue-count">0</strong></span>
+                </div>
+            </div>
+
+            <!-- Crawled Web Pages / Sources List -->
+            <div class="sidebar-section panel flex-grow">
+                <div class="panel-header">
+                    <h3><i class="fa-solid fa-server"></i> Indexed Directory</h3>
+                    <button id="clear-index-btn" class="btn-icon" title="Clear all scraped documents">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+                <div class="stat-row">
+                    <span>Documents: <strong id="db-doc-count">0</strong></span>
+                    <span>Total Chunks: <strong id="db-chunk-count">0</strong></span>
+                </div>
+                <div id="sources-list" class="sources-list">
+                    <div class="empty-sources">No pages indexed yet.</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Chat Area -->
+        <main class="chat-container">
+            <header class="chat-header">
+                <div class="chat-header-info">
+                    <h2> AI Knowledge base Assistant</h2>
+                    <p id="assistant-subtitle">Upload or crawl a site to begin chatting</p>
+                </div>
+                <div class="api-status-badge" id="api-status">
+                    <span class="dot red"></span>
+                    <span id="api-status-text">Groq API Key Required</span>
+                </div>
+            </header>
+
+            <!-- Message Thread -->
+        <div id="chat-thread" class="chat-thread">
+            <div class="message system-message">
+                <div class="avatar">
+                  <i class="fa-solid fa-robot"></i>
+                </div>
+
+                <div class="message-content">
+                  <p>
+                  Welcome to <strong>Scribbler RAG</strong>.
+                  </p>
+
+                  <p>
+                   Enter a website URL, build your knowledge base, and start asking questions.
+                  </p>
+                </div>
+            </div>
+        </div>
+            <!-- Input area -->
+            <div class="chat-input-area">
+                <form id="chat-form">
+                    <textarea id="chat-input" placeholder="Ask something about the indexed website..." rows="1" required disabled></textarea>
+                    <button type="submit" id="send-btn" class="btn btn-primary btn-round" disabled>
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for Groq API Key settings -->
+    <div id="settings-modal" class="modal-overlay hidden">
+        <div class="modal">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-gears"></i> API Configuration</h2>
+                <button id="close-settings-btn" class="btn-icon"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>We use Sentence Transformers (local CPU) for embeddings and the Groq API (<code>llama-3.3-70b-versatile</code>) for grounded answers.</p>
+                <div class="input-group">
+                    <label for="groq-key-input">Groq API Key</label>
+                    <div class="password-input-container">
+                        <input type="password" id="groq-key-input" placeholder="gsk_...">
+                        <button type="button" id="toggle-key-visibility" class="btn-icon">
+                            <i class="fa-solid fa-eye"></i>
+                        </button>
+                    </div>
+                    <span class="input-help">Get an API key for free in the <a href="https://console.groq.com/keys" target="_blank">Groq Console</a>. Key is saved locally in a <code>.env</code> file.</span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="cancel-settings-btn" class="btn btn-secondary">Cancel</button>
+                <button id="save-settings-btn" class="btn btn-primary">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main JS Application -->
+    <script src="app.js"></script>
+</body>
+</html>
